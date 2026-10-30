@@ -1,0 +1,33 @@
+name: bot
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - run: python poll.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          TIMEZONE: ${{ secrets.TIMEZONE }}
+      - name: Save state
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f state.enc ]; then git add state.enc; fi
+          git diff --cached --quiet || (git commit -m "state" && git push)
